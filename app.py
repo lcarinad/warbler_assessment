@@ -1,7 +1,7 @@
 import os
 
 from flask import Flask, render_template, request, flash, redirect, session, g
-from flask_debugtoolbar import DebugToolbarExtension
+# from flask_debugtoolbar import DebugToolbarExtension
 from sqlalchemy.exc import IntegrityError
 
 from forms import UserAddForm, LoginForm, MessageForm
@@ -20,7 +20,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ECHO'] = False
 app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = True
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', "it's a secret")
-toolbar = DebugToolbarExtension(app)
+# toolbar = DebugToolbarExtension(app)
 
 connect_db(app)
 
@@ -35,7 +35,7 @@ def add_user_to_g():
 
     if CURR_USER_KEY in session:
         g.user = User.query.get(session[CURR_USER_KEY])
-
+        
     else:
         g.user = None
 
@@ -48,9 +48,13 @@ def do_login(user):
 
 def do_logout():
     """Logout user."""
-
+    
     if CURR_USER_KEY in session:
         del session[CURR_USER_KEY]
+        print(f"after user is deleted this is the session**************{session}*********")
+
+   
+        
 
 
 @app.route('/signup', methods=["GET", "POST"])
@@ -112,9 +116,10 @@ def login():
 @app.route('/logout')
 def logout():
     """Handle logout of user."""
-
-    # IMPLEMENT THIS
-
+    print(f"before user is deleted this is the session**************{session}*********")
+    do_logout()
+    flash("Goodbye👋🏿", "success")
+    return redirect("/login")
 
 ##############################################################################
 # General user routes:
@@ -217,13 +222,12 @@ def profile():
 @app.route('/users/delete', methods=["POST"])
 def delete_user():
     """Delete user."""
-
+    user = User.query.get_or_404(id)
     if not g.user:
         flash("Access unauthorized.", "danger")
         return redirect("/")
-
-    do_logout()
-
+   
+    
     db.session.delete(g.user)
     db.session.commit()
 
