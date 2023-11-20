@@ -10,7 +10,7 @@
           <div class="card user-card">
             <div class="card-inner">
               <div class="image-wrapper">
-                <img src="{{ follower.header_image_url }}" alt="" class="card-hero">
+                <img src="{{ follower.header_image_url }}" alt="Header image for {{follower.username}}" class="card-hero">
               </div>
               <div class="card-contents">
                 <a href="/users/{{ follower.id }}" class="card-link">
@@ -30,7 +30,7 @@
                 {% endif %}
 
               </div>
-              <p class="card-bio">BIO HERE</p>
+              <p class="card-bio">{{follower.bio}}</p>
             </div>
           </div>
         </div>
