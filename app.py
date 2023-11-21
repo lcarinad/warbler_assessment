@@ -5,7 +5,7 @@ from flask import Flask, render_template, request, flash, redirect, session, g, 
 from sqlalchemy.exc import IntegrityError
 
 from forms import UserAddForm, LoginForm, MessageForm, EditProfileForm
-from models import db, connect_db, User, Message
+from models import db, connect_db, User, Message, Likes
 
 CURR_USER_KEY = "curr_user"
 
@@ -149,10 +149,10 @@ def users_show(user_id):
     
     # snagging messages in order from the database;
     # user.messages won't be in order by default
-    user_ids = [user.id for user in g.user.following] + [g.user.id]
+    
     messages = (Message
                 .query
-                .filter(Message.user_id.in_(user_ids))
+                .filter(Message.user_id == g.user.id)
                 .order_by(Message.timestamp.desc())
                 .limit(100)
                 .all())
@@ -212,6 +212,15 @@ def stop_following(follow_id):
 
     return redirect(f"/users/{g.user.id}/following")
 
+@app.route('/users/add_like/<int:message_id>', methods=["POST"])
+def add_like(message_id):
+    """Add a like to liked stories"""
+    new_like = Likes(user_id=g.user.id, message_id=message_id)
+    db.session.add(new_like)
+    db.session.commit()
+
+    url = url_for('messages_show', message_id=message_id)   
+    return redirect(url)
 
 @app.route('/users/profile/<int:user_id>/edit', methods=["GET", "POST"])
 def profile(user_id):
@@ -322,11 +331,13 @@ def homepage():
     """
 
     if g.user:
+        user_ids = [user.id for user in g.user.following] + [g.user.id]
         messages = (Message
-                    .query
-                    .order_by(Message.timestamp.desc())
-                    .limit(100)
-                    .all())
+                .query
+                .filter(Message.user_id.in_(user_ids))
+                .order_by(Message.timestamp.desc())
+                .limit(100)
+                .all())
 
         return render_template('home.html', messages=messages)
 
