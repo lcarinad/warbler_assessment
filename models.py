@@ -150,6 +150,22 @@ class User(db.Model):
         return user
 
     @classmethod
+    def edit_profile(cls, username, email, password, image_url, header_image_url, bio, location):
+        """Edit a user profile"""
+        hashed_pwd = bcrypt.generate_password_hash(password).decode('UTF-8')
+        updated_user = User(
+            username=username,
+            email=email,
+            password=hashed_pwd,
+            image_url=image_url,
+            header_image_url=header_image_url,
+            bio=bio,
+            location=location
+        )
+        db.session.commit()
+        return updated_user
+    
+    @classmethod
     def authenticate(cls, username, password):
         """Find user with `username` and `password`.
 

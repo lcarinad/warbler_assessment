@@ -7,12 +7,14 @@
       <h2 class="join-message">Edit Your Profile.</h2>
       <form method="POST" id="user_form">
         {{ form.hidden_tag() }}
-
         {% for field in form if field.widget.input_type != 'hidden' and field.name != 'password' %}
+        <div class="mb-3">
           {% for error in field.errors %}
             <span class="text-danger">{{ error }}</span>
           {% endfor %}
-          {{ field(placeholder=field.label.text, class="form-control") }}
+           {{ field.label(class ="form-label") }}
+           {{ field(class="form-control") }}
+          </div>
         {% endfor %}
 
         <p>To confirm changes, enter your password:</p>
@@ -21,6 +23,7 @@
             <span class="text-danger">
             {{ error }}
           </span>
+        
           {% endfor %}
         {% endif %}
         {{ form.password(placeholder="Enter your password to confirm", class="form-control") }}

@@ -1,10 +1,10 @@
 import os
 
-from flask import Flask, render_template, request, flash, redirect, session, g
+from flask import Flask, render_template, request, flash, redirect, session, g, url_for
 # from flask_debugtoolbar import DebugToolbarExtension
 from sqlalchemy.exc import IntegrityError
 
-from forms import UserAddForm, LoginForm, MessageForm
+from forms import UserAddForm, LoginForm, MessageForm, EditProfileForm
 from models import db, connect_db, User, Message
 
 CURR_USER_KEY = "curr_user"
@@ -23,7 +23,7 @@ app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', "it's a secret")
 # toolbar = DebugToolbarExtension(app)
 
 connect_db(app)
-
+app.app_context().push()
 
 ##############################################################################
 # User signup/login/logout
@@ -146,12 +146,13 @@ def users_show(user_id):
     """Show user profile."""
 
     user = User.query.get_or_404(user_id)
-
+    
     # snagging messages in order from the database;
     # user.messages won't be in order by default
+    user_ids = [user.id for user in g.user.following] + [g.user.id]
     messages = (Message
                 .query
-                .filter(Message.user_id == user_id)
+                .filter(Message.user_id.in_(user_ids))
                 .order_by(Message.timestamp.desc())
                 .limit(100)
                 .all())
@@ -212,11 +213,36 @@ def stop_following(follow_id):
     return redirect(f"/users/{g.user.id}/following")
 
 
-@app.route('/users/profile', methods=["GET", "POST"])
-def profile():
+@app.route('/users/profile/<int:user_id>/edit', methods=["GET", "POST"])
+def profile(user_id):
     """Update profile for current user."""
+    
+    if not g.user:
+        flash("Access unauthorized.", "danger")
+        return redirect("/")
+    
+    form = EditProfileForm(obj=g.user)
+  
+    if form.validate_on_submit():
+        user = User.authenticate(form.username.data,
+                                 form.password.data)
+        if user:
+            user.username = form.username.data
+            user.email = form.email.data
+            user.image_url = form.image_url.data or User.image_url.default.arg
+            user.header_image_url = form.header_image_url.data
+            user.bio = form.bio.data
+            user.location = form.location.data
+        
+            db.session.commit()
+            flash ("You updated your profile", "success")
+            return redirect(f"/users/{user.id}")
+        else:
+            flash("Invalid password.  Insert correct password to update profile", "danger")
+    
+    return render_template("/users/edit.html", form = form, user_id=g.user.id)
 
-    # IMPLEMENT THIS
+
 
 
 @app.route('/users/delete', methods=["POST"])
