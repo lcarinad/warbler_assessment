@@ -157,7 +157,6 @@ def users_show(user_id):
                 .limit(100)
                 .all())
     likes = len(user.likes) 
-    
     return render_template('users/show.html', user=user, messages=messages, likes=likes)
 
 
@@ -229,6 +228,18 @@ def add_like(message_id):
     except IntegrityError:
             flash("You already liked this message!", 'danger')
             return redirect('/')
+    
+@app.route('/users/<int:user_id>/likes')
+def show_likes(user_id):
+    """Show list of user's liked warbles"""
+    if not g.user:
+        flash("Access unauthorized.", "danger")
+        return redirect("/")
+    likes = g.user.likes
+
+    return render_template('/users/likes.html', likes=likes)
+
+
 
 @app.route('/users/profile/<int:user_id>/edit', methods=["GET", "POST"])
 def profile(user_id):
