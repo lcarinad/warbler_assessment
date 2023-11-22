@@ -58,9 +58,17 @@
                 btn-sm 
                 {{'btn-primary' if msg.id in likes else 'btn-secondary'}}"
               >
-                <i class="fa fa-thumbs-up"></i> 
+                <i class="fa fa-thumbs-up clicked"></i> 
               </button>
             </form>
+            
+            {% if g.user.likes %}
+              {% for liked_msg in g.user.likes %}
+              {% if liked_msg.id == msg.id %}
+              <!-- <span>🌟</span> -->
+              {% endif %}
+              {% endfor %}
+            {% endif %}
             {% endif %}
           </li>
         {% endfor %}

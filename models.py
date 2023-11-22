@@ -48,7 +48,17 @@ class Likes(db.Model):
         unique=True
     )
 
+    @classmethod
+    def add_like(cls, user_id,message_id):
+        """Add user likes to db"""
+        new_like = Likes(
+            user_id=user_id,
+            message_id=message_id
+        )
 
+        db.session.add(new_like)
+        return new_like   
+    
 class User(db.Model):
     """User in the system."""
 

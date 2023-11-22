@@ -152,11 +152,13 @@ def users_show(user_id):
     
     messages = (Message
                 .query
-                .filter(Message.user_id == g.user.id)
+                .filter(Message.user_id == user.id)
                 .order_by(Message.timestamp.desc())
                 .limit(100)
                 .all())
-    return render_template('users/show.html', user=user, messages=messages)
+    likes = len(user.likes) 
+    
+    return render_template('users/show.html', user=user, messages=messages, likes=likes)
 
 
 @app.route('/users/<int:user_id>/following')
@@ -215,12 +217,18 @@ def stop_following(follow_id):
 @app.route('/users/add_like/<int:message_id>', methods=["POST"])
 def add_like(message_id):
     """Add a like to liked stories"""
-    new_like = Likes(user_id=g.user.id, message_id=message_id)
-    db.session.add(new_like)
-    db.session.commit()
+    try:
+        Likes.add_like(user_id=g.user.id,
+                                message_id=message_id)
+        
+        db.session.commit()
 
-    url = url_for('messages_show', message_id=message_id)   
-    return redirect(url)
+        url = url_for('messages_show', message_id=message_id)   
+        return redirect(url)
+    
+    except IntegrityError:
+            flash("You already liked this message!", 'danger')
+            return redirect('/')
 
 @app.route('/users/profile/<int:user_id>/edit', methods=["GET", "POST"])
 def profile(user_id):
