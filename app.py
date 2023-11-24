@@ -215,7 +215,7 @@ def stop_following(follow_id):
 
 @app.route('/users/add_like/<int:message_id>', methods=["POST"])
 def add_like(message_id):
-    """Add a like to liked stories"""
+    """Add a like to liked warbles"""
     try:
         Likes.add_like(user_id=g.user.id,
                                 message_id=message_id)
@@ -235,10 +235,20 @@ def show_likes(user_id):
     if not g.user:
         flash("Access unauthorized.", "danger")
         return redirect("/")
-    likes = g.user.likes
+
+    user = User.query.get_or_404(user_id)
+    likes = user.likes
 
     return render_template('/users/likes.html', likes=likes)
 
+@app.route('/users/delete_like/<int:message_id>', methods=["POST"])
+def delete_like(message_id):
+    """Delete a previously liked warble"""
+    msg=Message.query.get(message_id)
+    g.user.likes.remove(msg)
+    db.session.commit()
+    print(f"****************Deleted like for message {message_id}. Redirecting...")
+    return redirect(url_for('homepage'))
 
 
 @app.route('/users/profile/<int:user_id>/edit', methods=["GET", "POST"])

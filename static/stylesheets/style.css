@@ -471,6 +471,10 @@ p.card-bio {
   padding: 12px;
 }
 
+.clicked{
+  color: #2e511f;
+}
+
 /* =========================== Edit Page */
 
 .edit-btn-area {
@@ -540,8 +544,4 @@ p.card-bio {
 
 .message-404 .form-inline input {
   flex: 1;
-}
-
-.clicked{
-  background-color: green;
 }

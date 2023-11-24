@@ -44,16 +44,17 @@ class Likes(db.Model):
 
     message_id = db.Column(
         db.Integer,
-        db.ForeignKey('messages.id', ondelete='cascade'),
-        unique=True
+        db.ForeignKey('messages.id', ondelete='cascade')
     )
 
-    @classmethod
-    def add_like(cls, user_id,message_id):
+    __table_args__ =(
+        db.UniqueConstraint('user_id', 'message_id'),
+    )
+    def add_like(user_id, message_id):
         """Add user likes to db"""
         new_like = Likes(
-            user_id=user_id,
-            message_id=message_id
+            user_id = user_id,
+            message_id = message_id
         )
 
         db.session.add(new_like)
