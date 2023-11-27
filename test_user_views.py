@@ -54,7 +54,43 @@ class UserViewsTestCase(TestCase):
         response = super().tearDown()
         db.session.rollback()
         return response
+    def testSignUp(self):
+        """Test signup route"""
+        #test user can succesfully view signup resource
+        with self.client as client:
+            response=client.get('/signup')
+            html = response.text
 
+            self.assertEqual(response.status_code, 200)
+            self.assertIn('Join Warbler today.', html )
+    
+        #test user succesfully can sign up with valid credentials
+        with self.client as client:
+            response = client.post('/signup', data={'username':'testuser1', 'password':'abc123!', 'email':'testuser1@test.com'})
+
+            html = response.text
+
+            self.assertEqual(response.status_code, 200)
+            self.assertIn("testuser1", html )
+    
+    def testLogin(self):
+        """Test user is able to login"""
+        #test user can view login page and html
+        with self.client as client:
+            response = client.get('/login')
+            html = response.text
+
+            self.assertEqual(response.status_code, 200)
+            self.assertIn('Welcome back.', html)
+        
+    def testLoginSubmit(self):
+        """Test user can login"""
+        with self.client as client:
+            response=client.post('/login', data={'username':'testuser', 'password':'HASHED_PASSWORD'}, follow_redirects=True)
+            html = response.text
+
+            self.assertEqual(response.status_code,200)
+            self.assertIn('Welcome back.', html)
     def test_list_users(self):
         """Test list of users are on page"""
         with self.client as client:
@@ -111,57 +147,127 @@ class UserViewsTestCase(TestCase):
             #Test for count on users following
             self.assertIn('2', html)
 
+    def test_show_following(self):
+        self.setup_followers()
 
-    def testSignUp(self):
-        """Test signup route"""
-        #test user can succesfully view signup resource
-        with self.client as client:
-            response=client.get('/signup')
-            html = response.text
-
-            self.assertEqual(response.status_code, 200)
-            self.assertIn('Join Warbler today.', html )
-    
-        #test user succesfully can sign up with valid credentials
-        with self.client as client:
-            response = client.post('/signup', data={'username':'testuser1', 'password':'abc123!', 'email':'testuser1@test.com'})
-
-            html = response.text
-
-            self.assertEqual(response.status_code, 200)
-            self.assertIn("testuser1", html )
-    
-    def testLogin(self):
-        """Test user is able to login"""
-        #test user can view login page and html
-        with self.client as client:
-            response = client.get('/login')
-            html = response.text
-
-            self.assertEqual(response.status_code, 200)
-            self.assertIn('Welcome back.', html)
-        
-    def testLoginSubmit(self):
-        """Test user can login"""
-        with self.client as client:
-            response=client.post('/login', data={'username':'testuser', 'password':'HASHED_PASSWORD'}, follow_redirects=True)
-            html = response.text
-
-            self.assertEqual(response.status_code,200)
-            self.assertIn('Welcome back.', html)
-
-        
-    def test_session(self):
-        """test user being added to session"""
-        app.config['WTF_CSRF_ENABLED']= False
-        test_user=User(username='rosiethedog', password='abc123!', email='rosie@bones.com')
-        db.session.add(test_user)
-        db.session.commit()
         with self.client as client:
             with client.session_transaction() as session:
-                session[CURR_USER_KEY]=test_user.id
-                response = client.post("/login", data={'username':'rosiethedog', 'password':'abc123!'})
-                self.assertIn(test_user.id, session["CURR_USER_KEY"])
+                session[CURR_USER_KEY] = self.testuser_id
+
+            response = client.get(f"/users/{self.testuser_id}/following")
+            html = response.text
+            self.assertIn('@def', html)
+            self.assertIn('@abc', html)
+
+            self.assertNotIn('@testdoguser', html)
+
+    def test_show_followers(self):
+        self.setup_followers()
+
+        with self.client as client:
+            with client.session_transaction() as session:
+                session[CURR_USER_KEY] = self.testuser_id
+            response = client.get(f"/users/{self.testuser_id}/followers")
+            html = response.text
+
+            self.assertIn('@abc', html)
+            self.assertNotIn('@testdoguser', html)
+
+    def test_unauthorized_following_page_access(self):
+        self.setup_followers()
+        with self.client as client:
+            response = client.get(f"/users/{self.testuser_id}/following", follow_redirects=True)
+            html = response.text
+
+            self.assertEqual(response.status_code, 200)
+            self.assertNotIn("@abc", html)
+            self.assertNotIn("@def", html)
+            self.assertIn("Access unauthorized.", html)
+
+    def test_unauthorized_follower_page_access(self):
+        self.setup_followers()
+        with self.client as client:
+            response = client.get(f"/users/{self.testuser_id}/followers", follow_redirects=True)
+            html = response.text
+
+            self.assertEqual(response.status_code, 200)
+            self.assertNotIn("@abc", html)
+            self.assertIn("Access unauthorized.", html)
+    
+    def setup_likes(self):
+        m1 = Message(text="This is a test message", user_id=self.testuser_id)
+        m2 = Message(text="Coffee is great", user_id=self.testuser_id)
+        m3 = Message(id=670, text="I love warble", user_id=self.u1_id)
+        db.session.add_all([m1, m2, m3])
+        db.session.commit()
+
+        l1 = Likes(user_id=self.testuser_id, message_id=670)
+
+        db.session.add(l1)
+        db.session.commit()
+    
+    def test_user_show_with_likes(self):
+        self.setup_likes()
+
+        with self.client as client:
+            response = client.get(f"/users/{self.testuser_id}")
+            html = response.text
+            self.assertEqual(response.status_code, 200)
+
+            self.assertIn("@testuser", html)
+            
+            #test for 2 messages
+            self.assertIn("2", html)
+            
+            #test for 1 like
+            self.assertIn("1", html)
+
+    def test_add_like(self):
+        test_m=Message(text="My dogs are too cute!", user_id=self.u1_id, id=1987)
+        db.session.add(test_m)
+        db.session.commit()
+
+        with self.client as client:
+            with client.session_transaction() as session:
+                session[CURR_USER_KEY] = self.testuser_id
+            response = client.post(f"/users/add_like/1987", follow_redirects=True)
+
+            self.assertEqual(response.status_code, 200)
+
+            likes = Likes.query.filter(Likes.message_id==1987).all()
+            self.assertEqual(len(likes), 1) 
+            self.assertEqual(likes[0].user_id, self.testuser_id)
+
+    def test_remove_like(self):
+        self.setup_likes()
+        m=Message.query.filter(Message.text=="I love warble").one()
+        self.assertIsNotNone(m)
+        self.assertNotEqual(m.user_id, self.testuser_id)
+
+        l = Likes.query.filter(Likes.user_id==self.testuser_id and Likes.message_id==m.id).one()
+
+        self.assertIsNotNone(l)
+        with self.client as client:
+            with client.session_transaction() as session:
+                session[CURR_USER_KEY] = self.testuser_id
+
+            response = client.post(f"/users/delete_like/{m.id}", follow_redirects=True)
+            self.assertEqual(response.status_code, 200)
+            likes = Likes.query.filter(Likes.message_id==m.id).all()
+            self.assertEqual(len(likes), 0) 
+
+    def test_unauthorized_like(self):
+        self.setup_likes()
+        with self.client as client:
+            response = client.get(f"/users/{self.testuser_id}/likes", follow_redirects=True)
+            html = response.text
+
+            self.assertEqual(response.status_code, 200)
+            self.assertIn("Access unauthorized.", html)
+
+
+
+    
 
                                         
             

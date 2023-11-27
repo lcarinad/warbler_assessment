@@ -280,9 +280,6 @@ def profile(user_id):
     
     return render_template("/users/edit.html", form = form, user_id=g.user.id)
 
-
-
-
 @app.route('/users/delete', methods=["POST"])
 def delete_user():
     """Delete user."""
