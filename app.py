@@ -35,7 +35,7 @@ def add_user_to_g():
 
     if CURR_USER_KEY in session:
         g.user = User.query.get(session[CURR_USER_KEY])
-        print(f"********************{session}")
+
     else:
         g.user = None
 
@@ -51,7 +51,7 @@ def do_logout():
     
     if CURR_USER_KEY in session:
         del session[CURR_USER_KEY]
-        print(f"after user is deleted this is the session**************{session}*********")
+
 
    
         
@@ -116,7 +116,6 @@ def login():
 @app.route('/logout')
 def logout():
     """Handle logout of user."""
-    print(f"before user is deleted this is the session**************{session}*********")
     do_logout()
     flash("Goodbye👋🏿", "success")
     return redirect("/login")
@@ -244,11 +243,14 @@ def show_likes(user_id):
 @app.route('/users/delete_like/<int:message_id>', methods=["POST"])
 def delete_like(message_id):
     """Delete a previously liked warble"""
-    msg=Message.query.get(message_id)
-    g.user.likes.remove(msg)
-    db.session.commit()
-    print(f"****************Deleted like for message {message_id}. Redirecting...")
-    return redirect(url_for('homepage'))
+    liked_msg_id=Message.query.get(message_id)
+    likes_list=g.user.likes
+    print(f"****************{g.user.likes}***********")
+    if liked_msg_id and g.user.id:
+        likes_list.remove(liked_msg_id)
+        db.session.commit()
+        flash("You removed the liked message", "success")
+        return redirect('/')
 
 
 @app.route('/users/profile/<int:user_id>/edit', methods=["GET", "POST"])

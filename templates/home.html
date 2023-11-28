@@ -49,27 +49,25 @@
             <div class="message-area">
               <a href="/users/{{ msg.user.id }}">@{{ msg.user.username }}</a>
               <span class="text-muted">{{ msg.timestamp.strftime('%d %B %Y') }}</span>
-              {% if g.user.likes %}
+              
+              <p>{{ msg.text }}</p>
+            </div>
+            {% if g.user.likes %}
               {% for liked_msg in g.user.likes %}
               {% if liked_msg.id == msg.id %}
               
-              <form method="POST" action="/users/delete_like/{{ msg.id }}">
-                <button type="submit" class="btn btn-sm">
+              <form action="/users/delete_like/{{ msg.id }}" method="POST" id="messages-form-rmv-like">
+                <button type="submit" class="btn btn-sm" >
                   <i class="fa-solid fa-star"></i>
                 </button>
               </form>
               {% endif %}
               {% endfor %}
               {% endif %}
-              <p>{{ msg.text }}</p>
-            </div>
             {% if msg.user.id != g.user.id %}
-            <form method="POST" action="/users/add_like/{{ msg.id }}" id="messages-form">
-              <button class="
-                btn 
-                btn-sm 
-                {{'btn-primary' if msg.id in likes else 'btn-secondary'}}" 
-                <i class="fa fa-thumbs-up"></i> 
+            <form method="POST" action="/users/add_like/{{ msg.id }}" id="messages-form-add-like">
+            <button class="btn btn-sm">
+                <i class="fa-solid fa-thumbs-up"></i>
               </button>
             </form>
             {% endif %}
