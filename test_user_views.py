@@ -1,6 +1,6 @@
 import os
 from unittest import TestCase
-from flask import session, g
+from flask import session
 
 from models import db, User, Message, Follows, Likes
 
@@ -54,6 +54,7 @@ class UserViewsTestCase(TestCase):
         response = super().tearDown()
         db.session.rollback()
         return response
+    
     def testSignUp(self):
         """Test signup route"""
         #test user can succesfully view signup resource

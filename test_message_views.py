@@ -48,14 +48,39 @@ class MessageViewTestCase(TestCase):
                                     email="test@test.com",
                                     password="testuser",
                                     image_url=None)
+        self.testuser_id=10000
+        self.testuser.id = self.testuser_id
+        self.u1 = User.signup("abc", "test1@test.com", "password", None)
+        self.u1_id = 1000
+        self.u1.id = self.u1_id
+        db.session.commit()
+        self.message = Message(id=670, text="I love cheese!", user_id= self.u1_id)
+        self.message1=Message(id=1987, text="Dogs are the best", user_id= self.u1_id)
 
+        db.session.add_all([self.message, self.message1])
         db.session.commit()
 
+    def tearDown(self):
+        """Clean up any fouled transaction"""
+        response = super().tearDown()
+        db.session.rollback()
+
+        return response
+    
     def test_add_message(self):
-        """Can use add a message?"""
+        """Can user add a message?"""
 
         # Since we need to change the session to mimic logging in,
         # we need to use the changing-session trick:
+        with self.client as c:
+            with c.session_transaction() as sess:
+                sess[CURR_USER_KEY] = self.testuser.id
+            resp = c.get('/messages/new')
+            html = resp.text
+
+            self.assertEqual(resp.status_code, 200)
+            self.assertIn("happening?", html)
+
 
         with self.client as c:
             with c.session_transaction() as sess:
@@ -64,10 +89,54 @@ class MessageViewTestCase(TestCase):
             # Now, that session setting is saved, so we can have
             # the rest of ours test
 
-            resp = c.post("/messages/new", data={"text": "Hello"})
+            resp = c.post("/messages/new", data={"text": "Hello"}, follow_redirects=True)
 
-            # Make sure it redirects
-            self.assertEqual(resp.status_code, 302)
+            html = resp.text
+            self.assertEqual(resp.status_code, 200)
 
-            msg = Message.query.one()
-            self.assertEqual(msg.text, "Hello")
+            self.assertIn("Hello", html)
+    
+    def test_unauthorized_add_message(self):
+        """Test user can not add message if not signed in"""
+
+        with self.client as c:
+            resp = c.post("/messages/new", data={"text": "Hello"}, follow_redirects=True)
+            html = resp.text
+
+            self.assertEqual(resp.status_code, 200)
+            self.assertIn('Access unauthorized.', html)
+            self.assertNotIn('Hello', html)
+
+
+    def test_show_message(self):
+        """Check message renders"""
+        with self.client as client:
+            resp=client.get('/messages/670')
+            html = resp.text
+
+            self.assertEqual(resp.status_code, 200)
+            self.assertIn('I love cheese!', html)
+
+    def test_destroy_message(self):
+        """Test message deletion"""
+
+        with self.client as client:
+            with client.session_transaction() as sess:
+                sess[CURR_USER_KEY] = self.u1.id
+            resp=client.post('/messages/1987/delete', follow_redirects=True)
+            html = resp.text
+
+            self.assertEqual(resp.status_code, 200)
+            self.assertNotIn('Dogs are the best', html)
+    
+    def test_unauthorized_destroy_message(self):
+        """Test user can not delete msg if not signed in"""
+        with self.client as client:
+            resp=client.post('/messages/1987/delete', follow_redirects=True)
+            html = resp.text
+            self.assertEqual(resp.status_code, 200)
+            self.assertEqual(resp.location, "/")
+
+
+
+    
