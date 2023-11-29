@@ -57,7 +57,7 @@
               {% if liked_msg.id == msg.id %}
               
               <form action="/users/delete_like/{{ msg.id }}" method="POST" id="messages-form-rmv-like">
-                <button type="submit" class="btn btn-sm" >
+                <button type="submit" class="btn btn-sm btn-warning" >
                   <i class="fa-solid fa-star"></i>
                 </button>
               </form>
@@ -66,7 +66,7 @@
               {% endif %}
             {% if msg.user.id != g.user.id %}
             <form method="POST" action="/users/add_like/{{ msg.id }}" id="messages-form-add-like">
-            <button class="btn btn-sm">
+              <button class="btn btn-sm {% if msg in g.user.likes %}btn-success{% else %}btn-secondary{% endif %}">
                 <i class="fa-solid fa-thumbs-up"></i>
               </button>
             </form>

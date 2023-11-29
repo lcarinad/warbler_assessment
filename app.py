@@ -245,7 +245,6 @@ def delete_like(message_id):
     """Delete a previously liked warble"""
     liked_msg_id=Message.query.get(message_id)
     likes_list=g.user.likes
-    print(f"****************{g.user.likes}***********")
     if liked_msg_id and g.user.id:
         likes_list.remove(liked_msg_id)
         db.session.commit()
